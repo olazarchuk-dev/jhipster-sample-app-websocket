@@ -47,6 +47,8 @@ SaaS — это модель предоставления лицензии на 
       ![Screenshot-11](img/screenshot_11.png)
   - [Spring intro to Security and WebSockets](https://www.baeldung.com/spring-security-websockets)
     - [Spring WebSocket security | configuration] https://docs.spring.io/spring-security/site/docs/4.2.x/reference/html/websocket.html
+    - [Spring introduction to WebSocket](https://docs.spring.io/spring-framework/docs/current/reference/html/web.html#websocket)
+    - [Пример браузерного кода WebSocket](https://learn.javascript.ru/websockets)
 
 При использовании HTTP клиент взаимодействует с сервером посредством серии запросов и ответов.
 С каждым запросом клиент открывает новое соединение, пока сервер не отправит ответ.
@@ -556,3 +558,9 @@ To configure CI for your project, run the ci-cd sub-generator (`jhipster ci-cd`)
 [definitelytyped]: https://definitelytyped.org/
 [angular cli]: https://cli.angular.io/
 [gatling]: https://gatling.io/
+
+---
+
+- [Пишем чат с использованием Spring Boot и WebSockets](https://habr.com/ru/company/otus/blog/516702)
+- [Using Spring Security with Websocket](https://petervarga301555197.wordpress.com/2019/04/12/using-spring-security-with-websocket)
+- [Spring Boot and Spring Security integration WebSocket examples](https://www.codetd.com/en/article/6320261)
