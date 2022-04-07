@@ -46,7 +46,7 @@ SaaS — это модель предоставления лицензии на 
       ![Screenshot-10](img/screenshot_10.png)
       ![Screenshot-11](img/screenshot_11.png)
   - [Spring intro to Security and WebSockets](https://www.baeldung.com/spring-security-websockets)
-    - [Spring WebSocket security | configuration] https://docs.spring.io/spring-security/site/docs/4.2.x/reference/html/websocket.html
+    - [Spring WebSocket security | configuration](https://docs.spring.io/spring-security/site/docs/4.2.x/reference/html/websocket.html)
     - [Spring introduction to WebSocket](https://docs.spring.io/spring-framework/docs/current/reference/html/web.html#websocket)
     - [Пример браузерного кода WebSocket](https://learn.javascript.ru/websockets)
 
@@ -69,7 +69,7 @@ SaaS — это модель предоставления лицензии на 
 `STOMP` (Streaming Text Oriented Messaging Protocol) — это простой протокол обмена текстовыми сообщениями (этот под-протокол, очень похожий на HTTP), каждый раз, когда любая из сторон отправляет данные, они должны отправлять данные в виде фрейма.
 `Фрейм` — имеет структуру, аналогичную HTTP-запросу.
 
-- У него (как и у HTTP-методов) есть глагол, связанный с назначением фрейма (например: **CONNECT**, **DISCONNECT**).
+- У него (как и у HTTP-методов) есть глагол, связанный с назначением фрейма (например: **CONNECT**, **CONNECT_ACK**, **MESSAGE**, **SUBSCRIBE**, **UNSUBSCRIBE**, **HEARTBEAT**, **DISCONNECT**, **DISCONNECT_ACK**, **OTHER**).
 - Он также содержит: **заголовок** — для предоставления дополнительной информации другой стороне; и **тело** — для предоставления основного содержимого;
 
 Каждый пользователь будет отправлять сообщения на конечную точку `/app/chat` и подписываться на получение сообщений от `/topic/messages`.
