@@ -1,6 +1,27 @@
-# JHipster Websocket | Sample Application
+# Using Websockets - JHipster | Sample Application
 
-This application was generated using JHipster 7.8.1, you can find documentation and help at [https://www.jhipster.tech](https://www.jhipster.tech).
+Это приложение было сгенерировано с использованием **JHipster 7.8.1**, вы можете найти документацию и помощь по адресу [https://www.jhipster.tech](https://www.jhipster.tech).
+
+- `Tutorial`: https://www.jhipster.tech/using-websockets
+- `Repo`: https://github.com/jhipster/jhipster-sample-app-websocket
+
+  ![Screenshot-1](img/screenshot_01.png)
+  ![Screenshot-2](img/screenshot_02.png)
+  ![Screenshot-3](img/screenshot_03.png)
+
+- http://localhost:8080
+  ![Screenshot-4](img/screenshot_04.png)
+  ```shell
+  npm install
+  npm start
+  ```
+- http://localhost:9000
+  ![Screenshot-5](img/screenshot_05.png)
+  ![Screenshot-6](img/screenshot_06.png)
+  ![Screenshot-7](img/screenshot_07.png)
+- http://localhost:9000/admin/docs
+  ![Screenshot-8](img/screenshot_08.png)
+  ![Screenshot-9](img/screenshot_09.png)
 
 ## Project Structure
 
