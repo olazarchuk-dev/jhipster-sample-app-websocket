@@ -29,9 +29,280 @@
 
 - https://blog.ringostat.com/ru/chto-takoe-saas-i-kak-eto-rabotaet
 
-SaaS (software as a service) — расшифровывается как программное обеспечение как услуга.
+`SaaS` (software as a service) — расшифровывается как программное обеспечение как услуга.
 SaaS — это модель предоставления лицензии на программное обеспечение по подписке.
 Чаще всего SaaS — это облачное решение находящееся на серверах в интернете.
+
+#### 1. Общий обзор протокола WebSocket
+
+- https://www.section.io/engineering-education/getting-started-with-spring-websockets
+  - https://www.devglan.com/spring-boot/spring-boot-websocket-example
+  - https://www.codetd.com/en/article/6320261
+  - https://docs.spring.io/spring-security/reference/5.6.0-RC1/servlet/integrations/websocket.html
+  - [Spring Boot WebSocket STOMP SockJS Example](https://www.javaguides.net/2019/06/spring-boot-websocket-stomp-sockjs-example.html)
+    - WebSocket-протокол предоставляет стандартизированный способ установления полнодуплексного двустороннего канала связи между клиентом и сервером по TCP-соединению, но он предназначен для работы через HTTP-протокол и использует порты 80 и 443;
+    - Взаимодействие WebSocket-а начинается с HTTP-запроса, который использует HTTP **Upgrade**-заголовок для переключения на протокол WebSocket;
+    - A вместо обычного статус-кода-200 от сервера с поддержкой WebSocket-а возвращается статус-кода-101:
+      ![Screenshot-10](img/screenshot_10.png)
+      ![Screenshot-11](img/screenshot_11.png)
+
+При использовании HTTP клиент взаимодействует с сервером посредством серии запросов и ответов.
+С каждым запросом клиент открывает новое соединение, пока сервер не отправит ответ.
+
+`SSE` (Server-Sent Events) — это серверная push-технология, позволяющая браузеру получать автоматические обновления с сервера через HTTP-соединение.
+В событии отправленным из сервера, сервер создает ответ в формате текста/потока событий, а веб-страница автоматически получает обновления.
+
+`WebSocket` — это протокол связи для постоянно открытых двусторонних соединений между веб-клиентом и сервером.
+Сначала клиент отправляет специальный запрос, называемый рукопожатием.
+Если ответ успешен, сервер открывает WebSocket-соединение на столько времени на сколько ему нужно.
+При открытом соединении клиент и сервер отправляют сообщения на конечные точки URL-адресов (подобно тому, как и HTTP).
+Как только соединение WebSocket установлено между клиентом и сервером, обе стороны могут бесконечно обмениваться информацией, пока соединение не будет закрыто кем-либо из сторон.
+
+Однако, в отличие от HTTP, WebSocket-протокол не определяет формат сообщения.
+Вместо этого клиент и сервер могут согласовать под-протокол во время рукопожатия и этот под-протокол будет определять способ форматирования всех отправляемых и получаемых сообщений.
+Под-протокол, который мы будем использовать в этом руководстве, называется `STOMP`.
+
+`STOMP` (Streaming Text Oriented Messaging Protocol) — это простой протокол обмена текстовыми сообщениями (этот под-протокол, очень похожий на HTTP), каждый раз, когда любая из сторон отправляет данные, они должны отправлять данные в виде фрейма.
+`Фрейм` — имеет структуру, аналогичную HTTP-запросу.
+
+- У него (как и у HTTP-методов) есть глагол, связанный с назначением фрейма (например: **CONNECT**, **DISCONNECT**).
+- Он также содержит: **заголовок** — для предоставления дополнительной информации другой стороне; и **тело** — для предоставления основного содержимого;
+
+Каждый пользователь будет отправлять сообщения на конечную точку `/app/chat` и подписываться на получение сообщений от `/topic/messages`.
+Единственная зависимость, которая нам понадобится — это зависимость `spring-boot-starter-websocket`.
+Затем нужно создать класс конфигурации, чтобы зарегистрировать наши конечные STOMP-точки и позволить использовать дополнительный инструмент под названием `SockJS`.
+`SockJS` — позволяет создавать планы для резервного копирования на случай, если клиент не может подключиться через WebSocket.
+(Это особенно полезно, если мы хотим разрешить использование старых браузеров, не поддерживающих WebSockets)
+
+```java
+@Configuration
+@EnableWebSocketMessageBroker
+public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer {
+
+  @Override
+  public void configureMessageBroker(MessageBrokerRegistry registry) {
+    // Set prefix for the endpoint that the client listens for our messages from
+    registry.enableSimpleBroker("/topic");
+
+    // Set prefix for endpoints the client will send messages to
+    registry.setApplicationDestinationPrefixes("/app");
+  }
+
+  @Override
+  public void registerStompEndpoints(StompEndpointRegistry registry) {
+    // Registers the endpoint where the connection will take place
+    registry
+      .addEndpoint("/stomp")
+      // Allow the origin http://localhost:63343 to send messages to us. (Base URL of the client)
+      .setAllowedOrigins("http://localhost:63343")
+      // Enable SockJS fallback options
+      .withSockJS();
+  }
+}
+
+```
+
+Как и при создании конечных REST-точек, здесь будем использовать контроллеры для обработки **фреймов**.
+Единственное отличие состоит в том, что мы будем по-разному аннотируем наши методы, чтобы сказать, что мы отправляем их на конечные WebSocket-точки.
+У нас есть аннотация `@MessageMapping` со значением `/chat` — мы используем ее, чтобы указать, что наш метод получает сообщения от `/app/chat`.
+У нас также есть аннотация `@SendTo` со значением `/topic/messages` — мы используем ее, чтобы отправленные сообщения с одной конечной точки перенаправить на другую конечную точку.
+
+```java
+@Controller
+public class MessageController {
+
+  // Handles messages from /app/chat. (Note the Spring adds the /app prefix for us).
+  @MessageMapping("/chat")
+  // Sends the return value of this method to /topic/messages
+  @SendTo("/topic/messages")
+  public MessageDto getMessages(MessageDto dto) {
+    return dto;
+  }
+}
+
+```
+
+Теперь нужно подключиться к этим конечным точкам на стороне клиента, которая будет простой HTML-страницей.
+
+1. Во-первых, создаем экземпляр SockJS-клиента с URL-адресом, по которому будет происходить рукопожатие;
+2. Затем создаем экземпляр Stomp-клиента (используя наш SockJS-клиент), который будем использовать для подключения к серверу;
+   - С этим экземпляром клиента stomp мы вызываем метод-connect с пустым объектом и функцией обратного вызова.
+   - Пустой объект представляет заголовки, которые будем отправлять с нашим фреймом.
+   - Функцию обратного вызова подписываемся на получение сообщений от нашей конечной точки `/topic/messages`.
+   - Далее есть наша функция `sendMessage` — она просто берет значение нашего элемента ввода и отправляет его в конечную точку `/app/chat` с пустыми заголовками.
+
+```javascript
+// Try to set up WebSocket connection with the handshake at "http://localhost:8080/stomp"
+let sock = new SockJS('http://localhost:8080/stomp');
+
+// Create a new StompClient object with the WebSocket endpoint
+let client = Stomp.over(sock);
+
+// Start the STOMP communications, provide a callback for when the CONNECT frame arrives.
+client.connect({}, frame => {
+  // Subscribe to "/topic/messages". Whenever a message arrives add the text in a list-item element in the unordered list.
+  client.subscribe('/topic/messages', payload => {
+    let message_list = document.getElementById('message-list');
+    let message = document.createElement('li');
+    message.appendChild(document.createTextNode(JSON.parse(payload.body).message));
+    message_list.appendChild(message);
+  });
+});
+
+// Take the value in the ‘message-input’ text field and send it to the server with empty headers.
+function sendMessage() {
+  let input = document.getElementById('message-input');
+  let message = input.value;
+  client.send('/app/chat', {}, JSON.stringify({ message: message }));
+}
+```
+
+#### 2. Реализация безопасности WebSocket
+
+- https://www.section.io/engineering-education/getting-started-with-spring-websockets
+
+Зависимость, которую нам понадобится — это зависимость `spring-boot-starter-security`.
+
+Далее нам нужно настроить безопасность в Spring для нашего приложения:
+
+```java
+@Configuration
+@EnableWebSecurity
+public class AppSecurityConfig extends WebSecurityConfigurerAdapter {
+
+  @Autowired
+  private AppUserDetailsService userDetailsService;
+
+  @Override
+  protected void configure(HttpSecurity http) {
+    // Set up simplified security settings requiring Spring to authenticate every request
+    http.csrf().disable().authorizeRequests().anyRequest().fullyAuthenticated();
+  }
+
+  @Override
+  public void configure(WebSecurity web) {
+    // Tell Spring to ignore securing the handshake endpoint. This allows the handshake to take place unauthenticated
+    web.ignoring().antMatchers("/stomp/**");
+  }
+
+  @Override
+  protected void configure(AuthenticationManagerBuilder auth) {
+    auth.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder());
+  }
+
+  // Create an AuthenticationManager bean to Authenticate users in the ChannelInterceptor
+  @Bean
+  public AuthenticationManager authManager() {
+    return this.authenticationManager();
+  }
+
+  @Bean
+  public PasswordEncoder passwordEncoder() {
+    return new BCryptPasswordEncoder(10);
+  }
+}
+
+```
+
+Потом нужно создать простой сервис **WebSocketAuthenticatorService**, чтобы взять и проверить заданное имя пользователя и пароль...
+Теперь, когда мы создали этот сервис **WebSocketAuthenticatorService**, нам нужно на стороне сервера создать и зарегистрировать наш **ChannelInterceptor** для использования в Spring:
+
+```java
+@Service
+public class AuthChannelInterceptor implements ChannelInterceptor {
+
+  private final WebSocketAuthenticatorService service;
+  private static final String USERNAME_HEADER = "username";
+  private static final String PASSWORD_HEADER = "password";
+
+  @Autowired
+  public AuthChannelInterceptor(WebSocketAuthenticatorService service) {
+    this.service = service;
+  }
+
+  // Processes a message before sending it
+  @Override
+  public Message<?> preSend(Message<?> message, MessageChannel channel) {
+    // Instantiate an object for retrieving the STOMP headers
+    final StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+    // Check that the object is not null
+    assert accessor != null;
+    // If the frame is a CONNECT frame
+    if (accessor.getCommand() == StompCommand.CONNECT) {
+      // retrieve the username from the headers
+      final String username = accessor.getFirstNativeHeader(USERNAME_HEADER);
+      // retrieve the password from the headers
+      final String password = accessor.getFirstNativeHeader(PASSWORD_HEADER);
+      // authenticate the user and if that's successful add their user information to the headers.
+      UsernamePasswordAuthenticationToken user = service.getAuthenticatedOrFail(username, password);
+      accessor.setUser(user);
+    }
+    return message;
+  }
+}
+
+```
+
+И добавим следующий метод **configureClientInboundChannel** в наш класс **WebSocketConfiguration**:
+
+```java
+@Configuration
+@EnableWebSocketMessageBroker
+public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer {
+
+  @Override
+  public void configureMessageBroker(MessageBrokerRegistry registry) {
+    // Set prefix for the endpoint that the client listens for our messages from
+    registry.enableSimpleBroker("/topic");
+
+    // Set prefix for endpoints the client will send messages to
+    registry.setApplicationDestinationPrefixes("/app");
+  }
+
+  @Override
+  public void registerStompEndpoints(StompEndpointRegistry registry) {
+    // Registers the endpoint where the connection will take place
+    registry
+      .addEndpoint("/stomp")
+      // Allow the origin http://localhost:63343 to send messages to us. (Base URL of the client)
+      .setAllowedOrigins("http://localhost:63343")
+      // Enable SockJS fallback options
+      .withSockJS();
+  }
+
+  @Override
+  public void configureClientInboundChannel(ChannelRegistration registration) {
+    // Add our interceptor for authentication/authorization
+    registration.interceptors(channelInterceptor);
+  }
+}
+
+```
+
+И наконец, нам нужно учесть все эти изменения в клиентском приложении.
+
+```javascript
+/*
+ Same as the above example, only adding username and password headers. The rest should stay the same. 
+ See "Implementing WebSockets in Spring" above for details of how the client works.
+*/
+client.connect({ username: 'Jimbob', password: 'pass' }, frame => {
+  client.subscribe('/topic/messages', payload => {
+    let message_list = document.getElementById('message-list');
+    let message = document.createElement('li');
+
+    message.appendChild(document.createTextNode(JSON.parse(payload.body).message));
+
+    message_list.appendChild(message);
+  });
+});
+```
+
+#### You can create a WebSocket request from the left sidebar in Postman
+
+- https://learning.postman.com/docs/sending-requests/supported-api-frameworks/websocket
+
+---
 
 ## Project Structure
 
