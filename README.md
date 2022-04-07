@@ -23,6 +23,16 @@
   ![Screenshot-8](img/screenshot_08.png)
   ![Screenshot-9](img/screenshot_09.png)
 
+---
+
+#### SaaS — что это такое?
+
+- https://blog.ringostat.com/ru/chto-takoe-saas-i-kak-eto-rabotaet
+
+SaaS (software as a service) — расшифровывается как программное обеспечение как услуга.
+SaaS — это модель предоставления лицензии на программное обеспечение по подписке.
+Чаще всего SaaS — это облачное решение находящееся на серверах в интернете.
+
 ## Project Structure
 
 Node is required for generation and recommended for development. `package.json` is always generated for a better development experience with prettier, commit hooks, scripts and so on.
