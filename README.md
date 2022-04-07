@@ -45,6 +45,8 @@ SaaS — это модель предоставления лицензии на 
     - A вместо обычного статус-кода-200 от сервера с поддержкой WebSocket-а возвращается статус-кода-101:
       ![Screenshot-10](img/screenshot_10.png)
       ![Screenshot-11](img/screenshot_11.png)
+  - [Spring intro to Security and WebSockets](https://www.baeldung.com/spring-security-websockets)
+    - [Spring WebSocket security | configuration] https://docs.spring.io/spring-security/site/docs/4.2.x/reference/html/websocket.html
 
 При использовании HTTP клиент взаимодействует с сервером посредством серии запросов и ответов.
 С каждым запросом клиент открывает новое соединение, пока сервер не отправит ответ.
