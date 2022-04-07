@@ -42,7 +42,7 @@ SaaS — это модель предоставления лицензии на 
   - [Spring Boot WebSocket STOMP SockJS Example](https://www.javaguides.net/2019/06/spring-boot-websocket-stomp-sockjs-example.html)
     - WebSocket-протокол предоставляет стандартизированный способ установления полнодуплексного двустороннего канала связи между клиентом и сервером по TCP-соединению, но он предназначен для работы через HTTP-протокол и использует порты 80 и 443;
     - Взаимодействие WebSocket-а начинается с HTTP-запроса, который использует HTTP **Upgrade**-заголовок для переключения на протокол WebSocket;
-    - A вместо обычного статус-кода-200 от сервера с поддержкой WebSocket-а возвращается статус-кода-101:
+    - A вместо обычного статус-кода **200** от сервера, с поддержкой WebSocket-а, возвращается статус-код **101**:
       ![Screenshot-10](img/screenshot_10.png)
       ![Screenshot-11](img/screenshot_11.png)
   - [Spring intro to Security and WebSockets](https://www.baeldung.com/spring-security-websockets)
