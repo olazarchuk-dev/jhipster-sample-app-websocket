@@ -35,7 +35,10 @@ SaaS — это модель предоставления лицензии на 
 
 #### 1. Общий обзор протокола WebSocket
 
-- https://www.section.io/engineering-education/getting-started-with-spring-websockets
+- `Tutorial-2`: https://www.baeldung.com/spring-security-websockets
+- `Repo-2`: https://github.com/eugenp/tutorials/tree/master/spring-security-modules/spring-security-web-sockets
+
+* https://www.section.io/engineering-education/getting-started-with-spring-websockets
   - https://www.devglan.com/spring-boot/spring-boot-websocket-example
   - https://www.codetd.com/en/article/6320261
   - https://docs.spring.io/spring-security/reference/5.6.0-RC1/servlet/integrations/websocket.html
@@ -45,10 +48,12 @@ SaaS — это модель предоставления лицензии на 
     - A вместо обычного статус-кода **200** от сервера, с поддержкой WebSocket-а, возвращается статус-код **101**:
       ![Screenshot-10](img/screenshot_10.png)
       ![Screenshot-11](img/screenshot_11.png)
+    - Соединение WebSocket можно открывать как `WS://` или как `WSS://` (Протокол WSS представляет собой WebSocket над HTTPS);
   - [Spring intro to Security and WebSockets](https://www.baeldung.com/spring-security-websockets)
     - [Spring WebSocket security | configuration](https://docs.spring.io/spring-security/site/docs/4.2.x/reference/html/websocket.html)
     - [Spring introduction to WebSocket](https://docs.spring.io/spring-framework/docs/current/reference/html/web.html#websocket)
     - [Пример браузерного кода WebSocket](https://learn.javascript.ru/websockets)
+    - https://learn.javascript.ru/websockets
 
 При использовании HTTP клиент взаимодействует с сервером посредством серии запросов и ответов.
 С каждым запросом клиент открывает новое соединение, пока сервер не отправит ответ.
@@ -69,7 +74,7 @@ SaaS — это модель предоставления лицензии на 
 `STOMP` (Streaming Text Oriented Messaging Protocol) — это простой протокол обмена текстовыми сообщениями (этот под-протокол, очень похожий на HTTP), каждый раз, когда любая из сторон отправляет данные, они должны отправлять данные в виде фрейма.
 `Фрейм` — имеет структуру, аналогичную HTTP-запросу.
 
-- У него (как и у HTTP-методов) есть глагол, связанный с назначением фрейма (например: **CONNECT**, **CONNECT_ACK**, **MESSAGE**, **SUBSCRIBE**, **UNSUBSCRIBE**, **HEARTBEAT**, **DISCONNECT**, **DISCONNECT_ACK**, **OTHER**).
+- У него (как и у HTTP-методов) есть глагол, связанный с назначением фрейма (например: **CONNECT**, **SUBSCRIBE**, **UNSUBSCRIBE**, **SEND**, **BEGIN**, **COMMIT**, **ACK**).
 - Он также содержит: **заголовок** — для предоставления дополнительной информации другой стороне; и **тело** — для предоставления основного содержимого;
 
 Каждый пользователь будет отправлять сообщения на конечную точку `/app/chat` и подписываться на получение сообщений от `/topic/messages`.
@@ -77,6 +82,7 @@ SaaS — это модель предоставления лицензии на 
 Затем нужно создать класс конфигурации, чтобы зарегистрировать наши конечные STOMP-точки и позволить использовать дополнительный инструмент под названием `SockJS`.
 `SockJS` — позволяет создавать планы для резервного копирования на случай, если клиент не может подключиться через WebSocket.
 (Это особенно полезно, если мы хотим разрешить использование старых браузеров, не поддерживающих WebSockets)
+Spring framework обеспечивает поддержку WebSocket STOMP.
 
 ```java
 @Configuration
@@ -247,6 +253,8 @@ public class AuthChannelInterceptor implements ChannelInterceptor {
 
 ```
 
+Для запросов, связанных с Websocket, базовая аутентификация отключена, и подключение разрешено всем.
+Аутентификация, связанная с Websocket, происходит в моем классе **AuthChannelInterceptor**, который реализует `org.springframework.messaging.support.ChannelInterceptor` и отклоняет несанкционированные подключения на основе информации в заголовке сообщения о подключении, предоставленной клиентами.
 И добавим следующий метод **configureClientInboundChannel** в наш класс **WebSocketConfiguration**:
 
 ```java
@@ -278,6 +286,38 @@ public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer 
   public void configureClientInboundChannel(ChannelRegistration registration) {
     // Add our interceptor for authentication/authorization
     registration.interceptors(channelInterceptor);
+  }
+}
+
+```
+
+или так
+
+```java
+@EnableWebSocketMessageBroker
+public class MyConfig extends AbstractWebSocketMessageBrokerConfigurer {
+
+  @Override
+  public void configureClientInboundChannel(ChannelRegistration registration) {
+    registration.setInterceptors(
+      new ChannelInterceptorAdapter() {
+        @Override
+        public Message<?> preSend(Message<?> message, MessageChannel channel) {
+          StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+
+          if (StompCommand.CONNECT.equals(accessor.getCommand())) {
+            String jwtToken = accessor.getFirstNativeHeader("Auth-Token");
+            if (StringUtils.isNotEmpty(jwtToken)) {
+              UserAuthenticationToken authToken = tokenService.retrieveUserAuthToken(jwtToken);
+              SecurityContextHolder.getContext().setAuthentication(authToken);
+              accessor.setUser(authToken);
+            }
+          }
+
+          return message;
+        }
+      }
+    );
   }
 }
 
@@ -564,3 +604,4 @@ To configure CI for your project, run the ci-cd sub-generator (`jhipster ci-cd`)
 - [Пишем чат с использованием Spring Boot и WebSockets](https://habr.com/ru/company/otus/blog/516702)
 - [Using Spring Security with Websocket](https://petervarga301555197.wordpress.com/2019/04/12/using-spring-security-with-websocket)
 - [Spring Boot and Spring Security integration WebSocket examples](https://www.codetd.com/en/article/6320261)
+- [Using token authentication with websocket and spring security](https://developpaper.com/using-token-authentication-with-websocket-and-spring-security)
