@@ -171,7 +171,7 @@ function sendMessage() {
 
 - https://www.section.io/engineering-education/getting-started-with-spring-websockets
 
-Зависимость, которую нам понадобится — это зависимость `spring-boot-starter-security`.
+Зависимость, которую нам понадобится — это зависимость `spring-boot-starter-security`, `spring-websocket`, `spring-messaging` и `spring-security-messaging`
 
 Далее нам нужно настроить безопасность в Spring для нашего приложения:
 
@@ -295,7 +295,7 @@ public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer 
 
 ```java
 @EnableWebSocketMessageBroker
-public class MyConfig extends AbstractWebSocketMessageBrokerConfigurer {
+public class WebSocketConfiguration extends AbstractWebSocketMessageBrokerConfigurer {
 
   @Override
   public void configureClientInboundChannel(ChannelRegistration registration) {
@@ -321,6 +321,72 @@ public class MyConfig extends AbstractWebSocketMessageBrokerConfigurer {
   }
 }
 
+```
+
+- `Tutorial-3`: https://www.baeldung.com/spring-security-websockets
+- `Repo-3`: https://github.com/eugenp/tutorials/tree/master/spring-security-modules/spring-security-web-sockets
+  - [Using token authentication with websocket and spring security](https://developpaper.com/using-token-authentication-with-websocket-and-spring-security)
+    Библиотека **spring-security-messaging** — не единственный способ реализовать безопасность для WebSockets.
+    Но поскольку мы используем эту библиотеку **spring-security-messaging**, поэтому мы будем использовать подход **AbstractSecurityWebSocketMessageBrokerConfigurer**, с имплементацией **configureInbound()**
+
+Класс **AbstractSecurityWebSocketMessageBrokerConfigurer** — обеспечивает дополнительную защиту, чем **WebSecurityConfigurerAdapter**, и позволяет указывать **конкретные требования авторизации** для назначений сокетов:
+
+```java
+@Configuration
+public class WebsocketSecurityConfiguration extends AbstractSecurityWebSocketMessageBrokerConfigurer {
+
+  @Override
+  protected void configureInbound(MessageSecurityMetadataSourceRegistry messages) {
+    messages
+      .nullDestMatcher()
+      .authenticated()
+      .simpDestMatchers("/topic/messages")
+      .hasAuthority(AuthoritiesConstants.ADMIN)
+      // matches any destination that starts with /topic/
+      // (i.e. cannot send messages directly to /topic/)
+      // (i.e. cannot subscribe to /topic/messages/* to get messages sent to
+      // /topic/messages-user<id>)
+      .simpDestMatchers("/topic/**")
+      .authenticated()
+      // message types other than MESSAGE and SUBSCRIBE
+      .simpTypeMatchers(SimpMessageType.MESSAGE, SimpMessageType.SUBSCRIBE)
+      .denyAll()
+      // catch all
+      .anyMessage()
+      .denyAll();
+  }
+}
+
+```
+
+В то время как **WebSecurityConfigurerAdapter** — позволяет указывать **различные требования авторизации** для разных маршрутов в рамках всего приложения:
+
+```java
+@Configuration
+@EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true)
+@EnableWebSecurity
+@ComponentScan("com.baeldung.springsecuredsockets")
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http
+          .authorizeRequests()
+          .antMatchers("/", "/index", "/authenticate").permitAll()
+          .antMatchers(
+            "/secured/**/**",
+            "/secured/success",
+            "/secured/socket",
+            "/secured/success").authenticated()
+          .anyRequest().authenticated()
+          .and()
+          .formLogin()
+          .loginPage("/login").permitAll()
+          .usernameParameter("username")
+          .passwordParameter("password")
+          .loginProcessingUrl("/authenticate")
+          //...
+    }
+}
 ```
 
 И наконец, нам нужно учесть все эти изменения в клиентском приложении.
